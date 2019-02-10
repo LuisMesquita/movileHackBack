@@ -23,15 +23,22 @@ app.post('/payment', async (req,res) => {
 		if(!amount) 
 			return res.status(400).send('Bad Request')
 
-		zoopController.doTransaction(seller, amount)
-
-		var balance = zoopController.getSellerBalance()
+		//Realiza transação
+		zoopController.doTransaction(seller, amount)		
 		
-		const message = "Olá "+sellerName+", "+buyerName+" acabou de transferir R$"+amount/100+" para você."
-		wavyController.sendMessage(testPhone, message)
+		//Envia mensagem de confirmação para o vendedor
+		const messageConfirmation = "Olá "+sellerName+", "+buyerName+" acabou de transferir R$"+amount/100+" para você."
+		await wavyController.sendMessage(testPhone, messageConfirmation)
+
+		//Envia mensagem com saldo atual do vendedor
+		const balance = await zoopController.getSellerBalance()
+		const value = parseFloat(balance+amount).toFixed(2).replace('.', ',')
+		const messageBalance = "Seu saldo atual é R$"+value
+		wavyController.sendMessage(testPhone, messageBalance)
 
 		return res.send('Transação efetuada')
-	} catch(err) {				
+	} catch(err) {		
+		console.log(err)		
 		return res.send(err)
 	}			
 })
@@ -44,13 +51,21 @@ app.post('/sms', async (req, res) => {
 
 	  	if(req.body.body == 'saldo') {  	
 	  		var balance = await zoopController.getSellerBalance()	  			  		
-	  		message = 'Olá, seu saldo é '+balance;
+	  		message = 'Olá '+sellerName+', seu saldo atual é R$'+parseFloat(balance).toFixed(2);
+	  		wavyController.sendMessage(testPhone, message) 
+
 	  	} else if(req.body.body == 'extrato') {
 	  		var history =  await zoopController.getSellerHistory()
-	  		message = 'Olá, suas últimas '+history.length+' transações foram: '+ history+'\n';	  		
+	  		var quantityMsg = history.length == 0 ? 'sua última transação foi:' : 'suas últimas '+history.length+' transações foram:'
+
+	  		message = 'Olá '+sellerName+', '+quantityMsg;
+	  		await wavyController.sendMessage(testPhone, message) 
+
+	  		for (var i = 0; i < history.length; i++) {
+	  			await wavyController.sendMessage(testPhone, history[i]) 
+	  		}
+
 	  	}
-	  	
-	  	wavyController.sendMessage(testPhone, message)  
 	 	return res.send();
 	} catch(err) {		
 		return res.send(err)
