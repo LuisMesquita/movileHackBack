@@ -8,7 +8,7 @@ const accessKey2 = "ak-7744112325"
 // e uma "message" de até 160 caracteres
 exports.sendMessage = function(phoneTo, message) {	
 	var headers = {
-	    'Access-key': accessKey1,	    
+	    'Access-key': accessKey2,	    
 	}
 
 	// Configure the request
